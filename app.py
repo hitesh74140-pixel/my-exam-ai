@@ -1,12 +1,12 @@
 import streamlit as st
 import os
 import shutil
-from engine import process_book, generate_exam
+from engine import process_book, process_text_input, generate_exam
 
 st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="📝")
 
 st.title("📝 Global AI Exam Generator")
-st.write("Upload a file from any computer, configure settings, and generate tests instantly via the cloud.")
+st.write("Upload a document OR paste text directly, configure settings, and generate tests with inline answers instantly.")
 
 UPLOAD_DIR = "./uploaded_materials"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -14,24 +14,40 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Sidebar configuration panel
 with st.sidebar:
     st.header("📂 Data Ingestion")
-    uploaded_file = st.file_uploader("Upload Material (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
     
-    if uploaded_file is not None:
-        file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
-        if not os.path.exists(file_path):
-            with open(file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            with st.spinner("Processing document into cloud database..."):
-                try:
-                    process_book(file_path)
-                    st.success("Document uploaded and indexed successfully!")
-                except Exception as e:
-                    st.error(f"Processing error: {str(e)}")
-        else:
-            st.info("Document loaded and ready.")
+    tab1, tab2 = st.tabs(["📄 Upload File", "✏️ Paste Text"])
+    
+    with tab1:
+        uploaded_file = st.file_uploader("Upload Material (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
+        if uploaded_file is not None:
+            file_path = os.path.join(UPLOAD_DIR, uploaded_file.name)
+            if not os.path.exists(file_path):
+                with open(file_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                with st.spinner("Processing document into cloud database..."):
+                    try:
+                        process_book(file_path)
+                        st.success("Document uploaded and indexed successfully!")
+                    except Exception as e:
+                        st.error(f"Processing error: {str(e)}")
+            else:
+                st.info("Document loaded and ready.")
+                
+    with tab2:
+        raw_text = st.text_area("Paste your material/text here:", height=250)
+        if st.button("Process Pasted Text", use_container_width=True):
+            if raw_text.strip():
+                with st.spinner("Processing text into cloud database..."):
+                    try:
+                        process_text_input(raw_text)
+                        st.success("Text processed and indexed successfully!")
+                    except Exception as e:
+                        st.error(f"Processing error: {str(e)}")
+            else:
+                st.warning("Please paste some text before clicking process.")
             
     st.header("🗑️ Reset Application")
-    if st.button("Wipe Current Database"):
+    if st.button("Wipe Current Database", use_container_width=True):
         if os.path.exists("./chroma_db"):
             shutil.rmtree("./chroma_db")
         if os.path.exists(UPLOAD_DIR):
@@ -56,13 +72,13 @@ st.markdown("---")
 
 if st.button("Generate Paper", type="primary", use_container_width=True):
     if not os.path.exists("./chroma_db"):
-        st.error("Operation Denied: Please upload a file via the sidebar panel first.")
+        st.error("Operation Denied: Please upload a file or paste text in the sidebar panel first.")
     elif not exam_topic.strip():
         st.error("Operation Denied: Please enter a target topic to query.")
     elif num_mcqs == 0 and num_subj == 0 and num_fib == 0:
         st.error("Operation Denied: Choose at least 1 question type variation to build.")
     else:
-        with st.spinner("AI cloud is analyzing document snippets and writing questions..."):
+        with st.spinner("AI cloud is analyzing content and writing questions..."):
             try:
                 generated_paper = generate_exam(
                     topic=exam_topic,
