@@ -60,7 +60,6 @@ def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_
     
     api_key = os.environ.get("GROQ_API_KEY")
     
-    # max_tokens=4096 prevents truncated output for larger question counts
     llm = ChatGroq(
         model=model_name, 
         temperature=0.3, 
@@ -78,15 +77,16 @@ def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_
         f"- EXACT Required Subjective Questions: {subj_cnt}\n"
         f"- EXACT Required Fill in the Blanks (FIB): {fib_cnt}\n\n"
         "STRICT QUANTITY RULE: You MUST generate EXACTLY the requested number of questions for each category. Do not stop early.\n\n"
-        "FORMATTING & ANSWER KEY PLACEMENT:\n"
+        "FORMATTING & ANSWER PLACEMENT RULES:\n"
         "1. Organize the paper into separate sections for each question type.\n"
-        "2. Keep explanations concise (1-2 sentences) so the complete paper fits.\n"
-        "3. For EVERY question, provide the correct answer and brief explanation DIRECTLY underneath.\n"
-        "   Example Format:    \n\n"
-        "   Q1: What is ...?   \n \n"
-        "    A) Choice 1          B) Choice 2         \n"
-        "    C) Choice 3          D) Choice 4\n"
-        "   --> Answer: B) Choice 2 --> Explanation: ...\n\n"
+        "2. FOR MCQs: Place EVERY option (A, B, C, D) on a NEW separate line.\n"
+        "3. FOR ANSWERS: Place answer details directly underneath the question using bold tags WITHOUT arrows (no '-->').\n\n"
+        "EXACT OUTPUT FORMAT PATTERN FOR MCQs:\n"
+        "Q1: What is the purpose of the <img> tag in HTML?\n"
+        "A) To create a hyperlink        B) To define an image in an HTML page\n"
+        "C) To specify font styles       D) To create a table    \n"
+        "**Answer:** B) To define an image in an HTML page    -->Explanation: The <img> tag is used to define an image in an HTML page.\n\n"
+        "4. For Fill in the Blanks, use underlines (e.g., '_____') and place **Answer:** and **Explanation:** bolded directly underneath.\n\n"
         f"Context Material:\n{context_text}"
     )
     
