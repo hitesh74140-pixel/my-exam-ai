@@ -49,7 +49,7 @@ def index_documents(docs):
     )
     return vector_store
 
-def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_cnt: int) -> str:
+def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_cnt: int, model_name: str = "llama-3.3-70b-versatile") -> str:
     """Retrieves context and asks Groq Cloud AI to build the exam."""
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vector_store = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
@@ -59,7 +59,14 @@ def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_
     context_text = "\n\n".join([doc.page_content for doc in docs])
     
     api_key = os.environ.get("GROQ_API_KEY")
-    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.3, groq_api_key=api_key)
+    
+    # max_tokens=4096 prevents truncated output for larger question counts
+    llm = ChatGroq(
+        model=model_name, 
+        temperature=0.3, 
+        groq_api_key=api_key,
+        max_tokens=4096
+    )
     
     system_prompt = (
         "You are an expert academic curriculum developer and examination officer.\n"
@@ -67,24 +74,25 @@ def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_
         "Do not use outside knowledge or make up facts.\n\n"
         f"TEST SETTINGS:\n"
         f"- Target Academic Difficulty: {difficulty}\n"
-        f"- Required Multiple Choice Questions (MCQ): {mcq_cnt}\n"
-        f"- Required Subjective Questions: {subj_cnt}\n"
-        f"- Required Fill in the Blanks (FIB): {fib_cnt}\n\n"
+        f"- EXACT Required Multiple Choice Questions (MCQ): {mcq_cnt}\n"
+        f"- EXACT Required Subjective Questions: {subj_cnt}\n"
+        f"- EXACT Required Fill in the Blanks (FIB): {fib_cnt}\n\n"
+        "STRICT QUANTITY RULE: You MUST generate EXACTLY the requested number of questions for each category. Do not stop early.\n\n"
         "FORMATTING & ANSWER KEY PLACEMENT:\n"
         "1. Organize the paper into separate sections for each question type.\n"
-        "2. CRITICAL RULE: For EVERY single question generated, provide the correct answer and brief explanation DIRECTLY underneath that question.\n"
+        "2. Keep explanations concise (1-2 sentences) so the complete paper fits.\n"
+        "3. For EVERY question, provide the correct answer and brief explanation DIRECTLY underneath.\n"
         "   Example Format:\n"
         "   Q1: What is ...?\n"
         "   A) Choice 1  B) Choice 2  C) Choice 3  D) Choice 4\n"
         "   --> Answer: B) Choice 2\n"
         "   --> Explanation: ...\n\n"
-        "3. For Fill in the Blanks, use underlines (e.g., '_____') and output the answer directly underneath.\n\n"
         f"Context Material:\n{context_text}"
     )
     
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
-        ("human", "Generate the custom assessment paper covering the topic: {input}")
+        ("human", "Generate the complete custom assessment paper covering the topic: {input}")
     ])
     
     chain = prompt | llm
