@@ -5,6 +5,7 @@ from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.documents import Document
 
 DB_DIR = "./chroma_db"
 
@@ -23,7 +24,15 @@ def process_book(file_path: str):
         raise ValueError(f"Unsupported format: {file_extension}")
         
     docs = loader.load()
-    
+    return index_documents(docs)
+
+def process_text_input(text_content: str):
+    """Processes pasted raw text into chunks and saves to vector database."""
+    docs = [Document(page_content=text_content, metadata={"source": "user_pasted_text"})]
+    return index_documents(docs)
+
+def index_documents(docs):
+    """Splits documents and indexes into Chroma vector store."""
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000, 
         chunk_overlap=200,
@@ -45,7 +54,7 @@ def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vector_store = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
     
-    # Retrieve top 5 matching document chunks
+    # Retrieve top matching document chunks
     docs = vector_store.similarity_search(topic, k=5)
     context_text = "\n\n".join([doc.page_content for doc in docs])
     
@@ -54,21 +63,23 @@ def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_
     
     system_prompt = (
         "You are an expert academic curriculum developer and examination officer.\n"
-        "Generate a structured examination paper based ONLY on the provided book context below.\n"
+        "Generate a structured examination paper based ONLY on the provided context below.\n"
         "Do not use outside knowledge or make up facts.\n\n"
         f"TEST SETTINGS:\n"
         f"- Target Academic Difficulty: {difficulty}\n"
         f"- Required Multiple Choice Questions (MCQ): {mcq_cnt}\n"
         f"- Required Subjective Questions: {subj_cnt}\n"
         f"- Required Fill in the Blanks (FIB): {fib_cnt}\n\n"
-        "FORMATTING:\n"
-        "1. Organize the paper into separate labeled sections for each question type.\n"
-        "2. For MCQs, provide exactly 4 clear choices labeled A, B, C, and D.\n"
-        "3. For Fill in the Blanks, use underlines (e.g., '_____') where the missing word belongs.\n\n"
-        "ANSWER KEY:\n"
-        "At the absolute end of your output, add a clear divider line called '--- SOLUTIONS AND ANSWER KEY ---'.\n"
-        "Provide correct answers and explanations for every question generated.\n\n"
-        f"Book Context:\n{context_text}"
+        "FORMATTING & ANSWER KEY PLACEMENT:\n"
+        "1. Organize the paper into separate sections for each question type.\n"
+        "2. CRITICAL RULE: For EVERY single question generated, provide the correct answer and brief explanation DIRECTLY underneath that question.\n"
+        "   Example Format:\n"
+        "   Q1: What is ...?\n"
+        "   A) Choice 1  B) Choice 2  C) Choice 3  D) Choice 4\n"
+        "   --> Answer: B) Choice 2\n"
+        "   --> Explanation: ...\n\n"
+        "3. For Fill in the Blanks, use underlines (e.g., '_____') and output the answer directly underneath.\n\n"
+        f"Context Material:\n{context_text}"
     )
     
     prompt = ChatPromptTemplate.from_messages([
