@@ -3,9 +3,9 @@ import os
 import shutil
 from engine import process_book, process_text_input, generate_exam
 
-st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="📝")
+st.set_page_config(page_title="Global Questions Generator", layout="wide", page_icon="📝")
 
-st.title("📝 Global AI Exam Generator")
+st.title("📝 Global Questions Generator")
 st.write("Upload a document OR paste text directly, configure settings, choose your AI model, and generate complete tests instantly.")
 
 st.warning(
