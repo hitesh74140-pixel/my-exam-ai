@@ -5,7 +5,6 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import streamlit as st
 import os
 import shutil
-import requests
 from engine import process_book, process_text_input, generate_exam
 
 st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="📝")
@@ -23,36 +22,6 @@ DB_DIR = "./chroma_db"
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(DB_DIR, exist_ok=True)
-
-# Helper function to dynamically fetch active models from Groq API
-@st.cache_data(ttl=3600)
-def get_active_groq_models():
-    api_key = os.environ.get("GROQ_API_KEY")
-    default_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-    
-    if not api_key:
-        return default_models
-        
-    try:
-        url = "https://api.groq.com/openai/v1/models"
-        headers = {"Authorization": f"Bearer {api_key}"}
-        response = requests.get(url, headers=headers, timeout=5)
-        
-        if response.status_code == 200:
-            data = response.json()
-            fetched_models = [
-                model["id"] for model in data.get("data", [])
-                if "whisper" not in model["id"].lower() and "guard" not in model["id"].lower()
-            ]
-            if fetched_models:
-                priority_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-                sorted_models = [m for m in priority_models if m in fetched_models] + \
-                                [m for m in fetched_models if m not in priority_models]
-                return sorted_models
-    except Exception:
-        pass
-        
-    return default_models
 
 # Sidebar configuration panel
 with st.sidebar:
@@ -103,15 +72,23 @@ with st.sidebar:
 st.subheader("🛠️ Step-by-Step Test Specification Configuration")
 col1, col2 = st.columns(2)
 
-active_models = get_active_groq_models()
-
 with col1:
     exam_topic = st.text_input("Target Topic / Chapter Name", placeholder="e.g., Photosynthesis, Chapter 2")
     difficulty_level = st.selectbox("Select Academic Rigor Level", ["Easy", "Medium", "Hard"])
     
+    # Exactly 3 Selected Models
     selected_model = st.selectbox(
-        "🤖 Select AI Model (Live Active Models)",
-        options=active_models
+        "🤖 Select AI Model",
+        options=[
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "mixtral-8x7b-32768"
+        ],
+        format_func=lambda x: {
+            "llama-3.3-70b-versatile": "Llama 3.3 (70B) - High Quality & Accurate ⭐",
+            "llama-3.1-8b-instant": "Llama 3.1 (8B) - Super Fast ⚡",
+            "mixtral-8x7b-32768": "Mixtral (8x7B) - Balanced & Precise 🎯"
+        }[x]
     )
 
 with col2:
