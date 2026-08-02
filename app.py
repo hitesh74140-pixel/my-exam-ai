@@ -3,9 +3,9 @@ import os
 import shutil
 from engine import process_book, generate_exam
 
-st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="ðŸ“")
+st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="📝")
 
-st.title("ðŸ“ Global AI Exam Generator")
+st.title("📝 Global AI Exam Generator")
 st.write("Upload a file from any computer, configure settings, and generate tests instantly via the cloud.")
 
 UPLOAD_DIR = "./uploaded_materials"
@@ -13,7 +13,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Sidebar configuration panel
 with st.sidebar:
-    st.header("ðŸ“‚ Data Ingestion")
+    st.header("📂 Data Ingestion")
     uploaded_file = st.file_uploader("Upload Material (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"])
     
     if uploaded_file is not None:
@@ -30,7 +30,7 @@ with st.sidebar:
         else:
             st.info("Document loaded and ready.")
             
-    st.header("ðŸ—‘ï¸ Reset Application")
+    st.header("🗑️ Reset Application")
     if st.button("Wipe Current Database"):
         if os.path.exists("./chroma_db"):
             shutil.rmtree("./chroma_db")
@@ -40,7 +40,7 @@ with st.sidebar:
         st.success("App data cleared!")
         st.rerun()
 
-st.subheader("ðŸ› ï¸ Step-by-Step Test Specification Configuration")
+st.subheader("🛠️ Step-by-Step Test Specification Configuration")
 col1, col2 = st.columns(2)
 
 with col1:
@@ -72,11 +72,11 @@ if st.button("Generate Paper", type="primary", use_container_width=True):
                     fib_cnt=num_fib
                 )
                 
-                st.subheader("ðŸ“„ Generated Assessment")
+                st.subheader("📄 Generated Assessment")
                 st.markdown(generated_paper)
                 
                 st.download_button(
-                    label="ðŸ“¥ Save Examination Document (.txt)",
+                    label="📥 Save Examination Document (.txt)",
                     data=generated_paper,
                     file_name=f"Assessment_{exam_topic.replace(' ', '_')}.txt",
                     mime="text/plain"
