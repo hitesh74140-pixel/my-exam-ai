@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import shutil
+import requests
 from engine import process_book, process_text_input, generate_exam
 
 st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="📝")
@@ -15,6 +16,38 @@ st.warning(
 
 UPLOAD_DIR = "./uploaded_materials"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Helper function to dynamically fetch active models from Groq API
+@st.cache_data(ttl=3600)  # Caches the active model list for 1 hour
+def get_active_groq_models():
+    api_key = os.environ.get("GROQ_API_KEY")
+    default_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+    
+    if not api_key:
+        return default_models
+        
+    try:
+        url = "https://api.groq.com/openai/v1/models"
+        headers = {"Authorization": f"Bearer {api_key}"}
+        response = requests.get(url, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            # Extract active text model IDs, filtering out whisper/audio or guard models
+            fetched_models = [
+                model["id"] for model in data.get("data", [])
+                if "whisper" not in model["id"].lower() and "guard" not in model["id"].lower()
+            ]
+            if fetched_models:
+                # Prioritize top production models at the top of the dropdown
+                priority_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+                sorted_models = [m for m in priority_models if m in fetched_models] + \
+                                [m for m in fetched_models if m not in priority_models]
+                return sorted_models
+    except Exception:
+        pass
+        
+    return default_models
 
 # Sidebar configuration panel
 with st.sidebar:
@@ -64,23 +97,17 @@ with st.sidebar:
 st.subheader("🛠️ Step-by-Step Test Specification Configuration")
 col1, col2 = st.columns(2)
 
+# Dynamically fetch active Groq models
+active_models = get_active_groq_models()
+
 with col1:
     exam_topic = st.text_input("Target Topic / Chapter Name", placeholder="e.g., Photosynthesis, Chapter 2")
     difficulty_level = st.selectbox("Select Academic Rigor Level", ["Easy", "Medium", "Hard"])
     
-    # Supported Groq Models
+    # Select from live fetched Groq models
     selected_model = st.selectbox(
-        "🤖 Select AI Model (Quality Level)",
-        options=[
-            "llama-3.3-70b-versatile",
-            "llama-3.1-8b-instant",
-            "deepseek-r1-distill-qwen-32b"
-        ],
-        format_func=lambda x: {
-            "llama-3.3-70b-versatile": "Llama 3.3 (70B) - High Quality & Accurate ⭐",
-            "llama-3.1-8b-instant": "Llama 3.1 (8B) - Super Fast ⚡",
-            "deepseek-r1-distill-qwen-32b": "DeepSeek R1 (Distill 32B) - Reasoning Specialist 🧠"
-        }[x]
+        "🤖 Select AI Model (Live Active Models)",
+        options=active_models
     )
 
 with col2:
