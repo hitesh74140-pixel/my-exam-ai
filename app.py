@@ -3,9 +3,9 @@ import os
 import shutil
 from engine import process_book, process_text_input, generate_exam
 
-st.set_page_config(page_title="Global Questions Generator", layout="wide", page_icon="📝")
+st.set_page_config(page_title="Global Exam Generator", layout="wide", page_icon="📝")
 
-st.title("📝 Global Questions Generator")
+st.title("📝 Global Exam Generator")
 st.write("Upload a document OR paste text directly, configure settings, choose your AI model, and generate complete tests instantly.")
 
 st.warning(
@@ -68,20 +68,16 @@ with col1:
     exam_topic = st.text_input("Target Topic / Chapter Name", placeholder="e.g., Photosynthesis, Chapter 2")
     difficulty_level = st.selectbox("Select Academic Rigor Level", ["Easy", "Medium", "Hard"])
     
-    # Model Selection for Quality vs Speed
+    # Active Groq Models
     selected_model = st.selectbox(
         "🤖 Select AI Model (Quality Level)",
         options=[
             "llama-3.3-70b-versatile",
-            "deepseek-r1-distill-llama-70b",
-            "llama-3.1-8b-instant",
-            "mixtral-8x7b-32768"
+            "llama-3.1-8b-instant"
         ],
         format_func=lambda x: {
-            "llama-3.3-70b-versatile": "Llama 3.3 (70B) - Best Overall Quality ⭐",
-            "deepseek-r1-distill-llama-70b": "DeepSeek R1 (70B) - Advanced Reasoning 🧠",
-            "llama-3.1-8b-instant": "Llama 3.1 (8B) - Super Fast ⚡",
-            "mixtral-8x7b-32768": "Mixtral 8x7B - Large Context 📚"
+            "llama-3.3-70b-versatile": "Llama 3.3 (70B) - High Quality & Accurate ⭐",
+            "llama-3.1-8b-instant": "Llama 3.1 (8B) - Super Fast ⚡"
         }[x]
     )
 
