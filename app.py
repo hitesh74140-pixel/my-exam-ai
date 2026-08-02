@@ -30,7 +30,7 @@ if not check_password():
     st.stop()  # Stop executing the rest of the script if not logged in
 st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="📝")
 
-st.title("📝 Global AI Exam Generator")
+st.title("📝 Global Question Generator")
 st.write("Upload a document OR paste text directly, configure settings, and generate tests with inline answers instantly.")
 
 UPLOAD_DIR = "./uploaded_materials"
