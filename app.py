@@ -2,36 +2,16 @@ import streamlit as st
 import os
 import shutil
 from engine import process_book, process_text_input, generate_exam
-import streamlit as st
 
-# --- SIMPLE AUTHENTICATION ---
-def check_password():
-    """Returns True if the user enters the correct password."""
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-
-    if st.session_state.authenticated:
-        return True
-
-    st.title("🔒 Access Restricted")
-    password_input = st.text_input("Enter Passcode to Access App:", type="password")
-    
-    if st.button("Login"):
-        # Retrieve password from secrets or fallback to a default
-        correct_password = st.secrets.get("APP_PASSWORD", "Admin123!")
-        if password_input == correct_password:
-            st.session_state.authenticated = True
-            st.rerun()
-        else:
-            st.error("Incorrect password. Please try again.")
-    return False
-
-if not check_password():
-    st.stop()  # Stop executing the rest of the script if not logged in
 st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="📝")
 
-st.title("📝 Global Question Generator")
-st.write("Upload a document OR paste text directly, configure settings, and generate tests with inline answers instantly.")
+st.title("📝 Global AI Exam Generator")
+st.write("Upload a document OR paste text directly, configure settings, choose your AI model, and generate complete tests instantly.")
+
+st.warning(
+    "⚠️ **Important Notice:** Please upload or paste **specific topics or chapters** instead of full textbooks. "
+    "Uploading large documents at once can exceed memory limits."
+)
 
 UPLOAD_DIR = "./uploaded_materials"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -87,6 +67,23 @@ col1, col2 = st.columns(2)
 with col1:
     exam_topic = st.text_input("Target Topic / Chapter Name", placeholder="e.g., Photosynthesis, Chapter 2")
     difficulty_level = st.selectbox("Select Academic Rigor Level", ["Easy", "Medium", "Hard"])
+    
+    # Model Selection for Quality vs Speed
+    selected_model = st.selectbox(
+        "🤖 Select AI Model (Quality Level)",
+        options=[
+            "llama-3.3-70b-versatile",
+            "deepseek-r1-distill-llama-70b",
+            "llama-3.1-8b-instant",
+            "mixtral-8x7b-32768"
+        ],
+        format_func=lambda x: {
+            "llama-3.3-70b-versatile": "Llama 3.3 (70B) - Best Overall Quality ⭐",
+            "deepseek-r1-distill-llama-70b": "DeepSeek R1 (70B) - Advanced Reasoning 🧠",
+            "llama-3.1-8b-instant": "Llama 3.1 (8B) - Super Fast ⚡",
+            "mixtral-8x7b-32768": "Mixtral 8x7B - Large Context 📚"
+        }[x]
+    )
 
 with col2:
     num_mcqs = st.slider("Multiple Choice Questions (MCQs)", min_value=0, max_value=25, value=5)
@@ -110,7 +107,8 @@ if st.button("Generate Paper", type="primary", use_container_width=True):
                     difficulty=difficulty_level,
                     mcq_cnt=num_mcqs,
                     subj_cnt=num_subj,
-                    fib_cnt=num_fib
+                    fib_cnt=num_fib,
+                    model_name=selected_model
                 )
                 
                 st.subheader("📄 Generated Assessment")
