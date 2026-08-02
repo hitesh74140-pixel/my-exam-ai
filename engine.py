@@ -1,22 +1,21 @@
 import os
-from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
 
 DB_DIR = "./chroma_db"
 
 def process_book(file_path: str):
-    """Detects file format, cuts text into chunks, and saves to a web-friendly database."""
+    """Detects file format, cuts text into chunks, and saves to a vector database."""
     _, file_extension = os.path.splitext(file_path.lower())
     
     if file_extension == ".pdf":
         loader = PyPDFLoader(file_path)
     elif file_extension == ".docx":
+        from langchain_community.document_loaders import Docx2txtLoader
         loader = Docx2txtLoader(file_path)
     elif file_extension == ".txt":
         loader = TextLoader(file_path, encoding="utf-8")
@@ -32,7 +31,6 @@ def process_book(file_path: str):
     )
     chunks = text_splitter.split_documents(docs)
     
-    # Using a free, lightweight cloud embedding model
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     
     vector_store = Chroma.from_documents(
@@ -43,15 +41,16 @@ def process_book(file_path: str):
     return vector_store
 
 def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_cnt: int) -> str:
-    """Retrieves context and asks Groq Cloud AI to build the exam for free."""
+    """Retrieves context and asks Groq Cloud AI to build the exam."""
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vector_store = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
     
-    retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+    # Retrieve top 5 matching document chunks
+    docs = vector_store.similarity_search(topic, k=5)
+    context_text = "\n\n".join([doc.page_content for doc in docs])
     
-    # Grab the API key from the web host settings panel
     api_key = os.environ.get("GROQ_API_KEY")
-    llm = ChatGroq(model="llama3-8b-8192", temperature=0.3, groq_api_key=api_key)
+    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.3, groq_api_key=api_key)
     
     system_prompt = (
         "You are an expert academic curriculum developer and examination officer.\n"
@@ -69,8 +68,7 @@ def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_
         "ANSWER KEY:\n"
         "At the absolute end of your output, add a clear divider line called '--- SOLUTIONS AND ANSWER KEY ---'.\n"
         "Provide correct answers and explanations for every question generated.\n\n"
-        "Book Context:\n"
-        "{context}"
+        f"Book Context:\n{context_text}"
     )
     
     prompt = ChatPromptTemplate.from_messages([
@@ -78,8 +76,6 @@ def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_
         ("human", "Generate the custom assessment paper covering the topic: {input}")
     ])
     
-    qa_chain = create_stuff_documents_chain(llm, prompt)
-    rag_chain = create_retrieval_chain(retriever, qa_chain)
-    
-    response = rag_chain.invoke({"input": topic})
-    return response["answer"]
+    chain = prompt | llm
+    response = chain.invoke({"input": topic})
+    return response.content
