@@ -9,6 +9,32 @@ from engine import process_book, process_text_input, generate_exam
 
 st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="📝")
 
+# --- AUTHENTICATION CHECK ---
+def check_password():
+    """Returns True if the user enters the correct password."""
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if st.session_state.authenticated:
+        return True
+
+    st.title("🔒 Access Restricted")
+    password_input = st.text_input("Enter Passcode to Access App:", type="password")
+    
+    if st.button("Login"):
+        # Checks Streamlit Secrets for APP_PASSWORD, falls back to Admin123! if not set
+        correct_password = st.secrets.get("APP_PASSWORD", "Admin123!")
+        if password_input == correct_password:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Incorrect password. Please try again.")
+    return False
+
+if not check_password():
+    st.stop()  # Stop script execution if user is not authenticated
+
+# --- MAIN APP LOGIC ---
 st.title("📝 Global AI Exam Generator")
 st.write("Upload a document OR paste text directly, configure settings, choose your AI model, and generate complete tests instantly.")
 
@@ -76,18 +102,19 @@ with col1:
     exam_topic = st.text_input("Target Topic / Chapter Name", placeholder="e.g., Photosynthesis, Chapter 2")
     difficulty_level = st.selectbox("Select Academic Rigor Level", ["Easy", "Medium", "Hard"])
     
-    # Exactly 3 Selected Models
+    # Exactly 3 Selected AI Models
     selected_model = st.selectbox(
         "🤖 Select AI Model",
         options=[
             "llama-3.3-70b-versatile",
             "llama-3.1-8b-instant",
-            
+            "mixtral-8x7b-32768"
         ],
         format_func=lambda x: {
             "llama-3.3-70b-versatile": "Llama 3.3 (70B) - High Quality & Accurate ⭐",
             "llama-3.1-8b-instant": "Llama 3.1 (8B) - Super Fast ⚡",
-                   }[x]
+            "mixtral-8x7b-32768": "Mixtral (8x7B) - Balanced & Precise 🎯"
+        }[x]
     )
 
 with col2:
