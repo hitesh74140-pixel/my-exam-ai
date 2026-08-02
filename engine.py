@@ -84,9 +84,9 @@ def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_
         "3. For EVERY question, provide the correct answer and brief explanation DIRECTLY underneath.\n"
         "   Example Format:\n"
         "   Q1: What is ...?\n"
-        "   A) Choice 1  B) Choice 2  C) Choice 3  D) Choice 4\n"
-        "   --> Answer: B) Choice 2\n"
-        "   --> Explanation: ...\n\n"
+        "    A) Choice 1          B) Choice 2         \n"
+        "    C) Choice 3          D) Choice 4\n"
+        "   --> Answer: B) Choice 2 --> Explanation: ...\n\n"
         f"Context Material:\n{context_text}"
     )
     
