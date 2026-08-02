@@ -1,3 +1,7 @@
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 import os
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -33,6 +37,8 @@ def process_text_input(text_content: str):
 
 def index_documents(docs):
     """Splits documents and indexes into Chroma vector store."""
+    os.makedirs(DB_DIR, exist_ok=True)
+    
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000, 
         chunk_overlap=200,
@@ -51,10 +57,10 @@ def index_documents(docs):
 
 def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_cnt: int, model_name: str = "llama-3.3-70b-versatile") -> str:
     """Retrieves context and asks Groq Cloud AI to build the exam."""
+    os.makedirs(DB_DIR, exist_ok=True)
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vector_store = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
     
-    # Retrieve top matching document chunks
     docs = vector_store.similarity_search(topic, k=5)
     context_text = "\n\n".join([doc.page_content for doc in docs])
     
@@ -83,9 +89,12 @@ def generate_exam(topic: str, difficulty: str, mcq_cnt: int, subj_cnt: int, fib_
         "3. FOR ANSWERS: Place answer details directly underneath the question using bold tags WITHOUT arrows (no '-->').\n\n"
         "EXACT OUTPUT FORMAT PATTERN FOR MCQs:\n"
         "Q1: What is the purpose of the <img> tag in HTML?\n"
-        "A) To create a hyperlink        B) To define an image in an HTML page\n"
-        "C) To specify font styles       D) To create a table    \n"
-        "**Answer:** B) To define an image in an HTML page    -->Explanation: The <img> tag is used to define an image in an HTML page.\n\n"
+        "A) To create a hyperlink\n"
+        "B) To define an image in an HTML page\n"
+        "C) To specify font styles\n"
+        "D) To create a table\n"
+        "**Answer:** B) To define an image in an HTML page\n"
+        "**Explanation:** The <img> tag is used to define an image in an HTML page.\n\n"
         "4. For Fill in the Blanks, use underlines (e.g., '_____') and place **Answer:** and **Explanation:** bolded directly underneath.\n\n"
         f"Context Material:\n{context_text}"
     )
