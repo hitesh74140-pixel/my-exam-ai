@@ -73,11 +73,14 @@ with col1:
         "🤖 Select AI Model (Quality Level)",
         options=[
             "llama-3.3-70b-versatile",
+            "deepseek-r1-distill-qwen-32b"
             "llama-3.1-8b-instant"
+            
         ],
         format_func=lambda x: {
             "llama-3.3-70b-versatile": "Llama 3.3 (70B) - High Quality & Accurate ⭐",
             "llama-3.1-8b-instant": "Llama 3.1 (8B) - Super Fast ⚡"
+            "deepseek-r1-distill-qwen-32b": "DeepSeek R1 (Distill 32B) - Reasoning Specialist 🧠"
         }[x]
     )
 
