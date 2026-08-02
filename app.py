@@ -2,7 +2,32 @@ import streamlit as st
 import os
 import shutil
 from engine import process_book, process_text_input, generate_exam
+import streamlit as st
 
+# --- SIMPLE AUTHENTICATION ---
+def check_password():
+    """Returns True if the user enters the correct password."""
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if st.session_state.authenticated:
+        return True
+
+    st.title("🔒 Access Restricted")
+    password_input = st.text_input("Enter Passcode to Access App:", type="password")
+    
+    if st.button("Login"):
+        # Retrieve password from secrets or fallback to a default
+        correct_password = st.secrets.get("APP_PASSWORD", "Admin123!")
+        if password_input == correct_password:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Incorrect password. Please try again.")
+    return False
+
+if not check_password():
+    st.stop()  # Stop executing the rest of the script if not logged in
 st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="📝")
 
 st.title("📝 Global AI Exam Generator")
