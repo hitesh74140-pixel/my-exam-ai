@@ -1,12 +1,16 @@
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 import streamlit as st
 import os
 import shutil
 import requests
 from engine import process_book, process_text_input, generate_exam
 
-st.set_page_config(page_title="Exam Questions Generator", layout="wide", page_icon="📝")
+st.set_page_config(page_title="Global AI Exam Generator", layout="wide", page_icon="📝")
 
-st.title("📝Exam  Questions Generator")
+st.title("📝 Global AI Exam Generator")
 st.write("Upload a document OR paste text directly, configure settings, choose your AI model, and generate complete tests instantly.")
 
 st.warning(
@@ -15,10 +19,13 @@ st.warning(
 )
 
 UPLOAD_DIR = "./uploaded_materials"
+DB_DIR = "./chroma_db"
+
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(DB_DIR, exist_ok=True)
 
 # Helper function to dynamically fetch active models from Groq API
-@st.cache_data(ttl=3600)  # Caches the active model list for 1 hour
+@st.cache_data(ttl=3600)
 def get_active_groq_models():
     api_key = os.environ.get("GROQ_API_KEY")
     default_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
@@ -33,13 +40,11 @@ def get_active_groq_models():
         
         if response.status_code == 200:
             data = response.json()
-            # Extract active text model IDs, filtering out whisper/audio or guard models
             fetched_models = [
                 model["id"] for model in data.get("data", [])
                 if "whisper" not in model["id"].lower() and "guard" not in model["id"].lower()
             ]
             if fetched_models:
-                # Prioritize top production models at the top of the dropdown
                 priority_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
                 sorted_models = [m for m in priority_models if m in fetched_models] + \
                                 [m for m in fetched_models if m not in priority_models]
@@ -86,8 +91,9 @@ with st.sidebar:
             
     st.header("🗑️ Reset Application")
     if st.button("Wipe Current Database", use_container_width=True):
-        if os.path.exists("./chroma_db"):
-            shutil.rmtree("./chroma_db")
+        if os.path.exists(DB_DIR):
+            shutil.rmtree(DB_DIR)
+        os.makedirs(DB_DIR, exist_ok=True)
         if os.path.exists(UPLOAD_DIR):
             shutil.rmtree(UPLOAD_DIR)
             os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -97,14 +103,12 @@ with st.sidebar:
 st.subheader("🛠️ Step-by-Step Test Specification Configuration")
 col1, col2 = st.columns(2)
 
-# Dynamically fetch active Groq models
 active_models = get_active_groq_models()
 
 with col1:
     exam_topic = st.text_input("Target Topic / Chapter Name", placeholder="e.g., Photosynthesis, Chapter 2")
     difficulty_level = st.selectbox("Select Academic Rigor Level", ["Easy", "Medium", "Hard"])
     
-    # Select from live fetched Groq models
     selected_model = st.selectbox(
         "🤖 Select AI Model (Live Active Models)",
         options=active_models
@@ -118,7 +122,7 @@ with col2:
 st.markdown("---")
 
 if st.button("Generate Paper", type="primary", use_container_width=True):
-    if not os.path.exists("./chroma_db"):
+    if not os.path.exists(DB_DIR) or len(os.listdir(DB_DIR)) == 0:
         st.error("Operation Denied: Please upload a file or paste text in the sidebar panel first.")
     elif not exam_topic.strip():
         st.error("Operation Denied: Please enter a target topic to query.")
