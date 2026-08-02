@@ -82,13 +82,12 @@ with col1:
         options=[
             "llama-3.3-70b-versatile",
             "llama-3.1-8b-instant",
-            "mixtral-8x7b-32768"
+            
         ],
         format_func=lambda x: {
             "llama-3.3-70b-versatile": "Llama 3.3 (70B) - High Quality & Accurate ⭐",
             "llama-3.1-8b-instant": "Llama 3.1 (8B) - Super Fast ⚡",
-            "mixtral-8x7b-32768": "Mixtral (8x7B) - Balanced & Precise 🎯"
-        }[x]
+                   }[x]
     )
 
 with col2:
