@@ -1,9 +1,11 @@
 streamlit
 langchain
-langchain-groq
 langchain-community
+langchain-groq
 langchain-huggingface
 chromadb
+pysqlite3-binary
+sentence-transformers
 pypdf
 docx2txt
-sentence-transformers
+requests
