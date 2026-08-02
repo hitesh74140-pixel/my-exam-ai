@@ -1,3 +1,4 @@
+streamlit
 langchain
 langchain-groq
 langchain-community
@@ -5,5 +6,4 @@ langchain-huggingface
 chromadb
 pypdf
 docx2txt
-streamlit
 sentence-transformers
